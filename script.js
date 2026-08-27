@@ -3,7 +3,7 @@ const userInput = document.getElementById('userInput');
 const sendBtn = document.getElementById('sendBtn');
 const userIdInput = document.getElementById('userId');
 
-// URL de tu backend en Render
+// ⚠️ CAMBIA ESTA URL por la de tu backend (Render o Vercel donde corre FastAPI)
 const API_URL = "https://rob-6t96.onrender.com/chat";
 
 function addMessage(text, sender) {
@@ -31,9 +31,6 @@ async function sendMessage() {
     addMessage(text, 'user');
     userInput.value = "";
     userInput.focus();
-
-    // Mensaje temporal de carga
-    const loadingId = "Cargando...";
 
     try {
         const response = await fetch(API_URL, {
