@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat con R.O.B.</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="chat-container">
+        <!-- Cabecera -->
+        <div class="chat-header">
+            <h2>🤖 R.O.B.</h2>
+            <p>Asistente con memoria en la nube</p>
+        </div>
+
+        <!-- Identificador de usuario -->
+        <div class="user-config">
+            <label for="userId">Usuario:</label>
+            <input type="text" id="userId" value="andres">
+        </div>
+
+        <!-- Ventana de mensajes -->
+        <div id="chatMessages" class="chat-messages">
+            <div class="message bot-message">
+                ¡Hola! Soy R.O.B. ¿De qué te gustaría hablar hoy?
+            </div>
+        </div>
+
+        <!-- Caja de escritura -->
+        <div class="chat-input-area">
+            <input type="text" id="userInput" placeholder="Escribe tu mensaje aquí..." autocomplete="off">
+            <button id="sendBtn">Enviar</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from pymongo import MongoClient
 from groq import Groq
@@ -6,13 +7,30 @@ from groq import Groq
 import os
 from dotenv import load_dotenv
 
-load_dotenv("atlas-credentials.env")
+# Carga el archivo local solo si existe (para desarrollo en tu PC)
+if os.path.exists("atlas-credentials.env"):
+    load_dotenv("atlas-credentials.env")
+elif os.path.exists(".env"):
+    load_dotenv(".env")
 
 app = FastAPI(title="API de R.O.B.", version="1.0")
+
+# --- CONFIGURACIÓN DE CORS (Vital para que el frontend se comunique) ---
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Permite peticiones desde cualquier origen (tu HTML local)
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # --- CONFIGURACIÓN DE CREDENCIALES ---
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 MONGO_URI = os.getenv("MONGODB_URI")
+
+# Validación rápida para saber si faltan credenciales
+if not GROQ_API_KEY or not MONGO_URI:
+    print("⚠️ ADVERTENCIA: Faltan las variables de entorno GROQ_API_KEY o MONGODB_URI.")
 
 groq_client = Groq(api_key=GROQ_API_KEY)
 mongo_client = MongoClient(MONGO_URI)
@@ -23,7 +41,7 @@ class MensajeUsuario(BaseModel):
     user_id: str
     mensaje: str
 
-# --- RUTA PRINCIPAL (Para evitar el error Not Found al entrar a la raíz) ---
+# --- RUTA PRINCIPAL ---
 @app.get("/")
 def leer_raiz():
     return {"mensaje": "¡Hola! R.O.B. está en línea y listo para operar."}
