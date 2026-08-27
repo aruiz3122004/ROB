@@ -1,0 +1,37 @@
+Fase 1: Interfaz de usuario (web / app)
+
+Fase 2: Backend / API (Python / FastAPI)
+
+Fase 3: Motor de inteligencia (Modelo LLM Base)
+
+Fase 4: Base de conocimiento (RAG / Vcetor DB)
+
+
+
+ALOJARLO EN LA NUBE
+- SERVICIOS DE AZURE / AWS 
+
+Vector Database  +   Langchain / LlamaIndex
+
+IMPLEMENTAR:
+1. Memoria de sesión (ventana de contexto)
+2. Memoria de perfil de usuario (base de datos) : El backend guarda reglas estipuladas al usuario en una base de datos
+3. RAG: Memoria de documentos donde subir PDFs y archivos a la IA en la nube, indexados.
+
+
+-DISEÑAR BASE DE DATOS LIGERA: MONGO DB ATLAS GRATUITA
+-BACKEND FUNCIONAL EN FASTAPI: LÓGICA PROGRAMAR LÓGICA EN PYTHON QUE TOME EL MENSAJE DEL USUARIO, BUSQUE SI HAY INFORMACIÓN PREVIA GUARDADA SOBRE EL, Y SE LA ENVÍE AL MODELO DE IA
+-CONECTARLO A UNA API DE IA: USAR UN PROVEEDOR COMO GROQ PARA CONECTARLO A UN MODELO POTENTE Y GRATUITO / ECONÓMICO DE CÓDIGO ABIERTO
+-DESPLEGAR AL SERVIDOR: SUBIR EL CÓDIGO DE PYTHON A RENDER O RAILWAY
+-CREAR LA INTERFAZ WEB: CONECTAR LA URL DEL BACKEND A UNA PÁGINA WEB SENCILLA PARA CHATEAR CON EL DESDE CUALQUIER LUGAR
+
+PLATAFORMA: GROQ
+API KEY: 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
+NAME: ROB 
+
+PLATAFORMA: MONGODB
+CLÚSTER GRATUITO (512 MB STORAGE)
+
+USERNAME: andreselgameroscuro_db_user
+PASSWORD: bBeiTGngybJkEU6h
+IP: 191.110.53.23
