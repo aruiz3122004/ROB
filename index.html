@@ -30,8 +30,17 @@
             </div>
         </div>
 
+        <!-- Vista previa de imagen seleccionada -->
+        <div id="imagePreviewContainer" class="image-preview-container" style="display: none;">
+            <img id="imagePreview" src="" alt="Vista previa">
+            <span id="imageName">imagen.jpg</span>
+            <button id="removeImageBtn" type="button" title="Quitar imagen">✕</button>
+        </div>
+
         <!-- Caja de escritura -->
         <div class="chat-input-area">
+            <input type="file" id="imageInput" accept="image/*" style="display: none;">
+            <button id="attachBtn" type="button" class="icon-btn" title="Adjuntar imagen">📎</button>
             <input type="text" id="userInput" placeholder="Escribe tu mensaje aquí..." autocomplete="off">
             <button id="sendBtn">Enviar</button>
         </div>

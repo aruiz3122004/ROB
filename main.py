@@ -174,18 +174,39 @@ def chatear_con_rob(datos: ChatRequest):
             "añade al final de tu respuesta la etiqueta [RECORDAR: lo que debo recordar]."
         )
 
-        messages_payload = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": datos.mensaje}
-        ]
+        # Selección de modelo y estructuración de mensaje (Visión vs Texto)
+        if datos.image_data:
+            model_to_use = "qwen/qwen3.6-27b"
+            user_content = [
+                {"type": "text", "text": datos.mensaje or "Analiza esta imagen."}
+            ]
+            user_content.append({
+                "type": "image_url",
+                "image_url": {"url": datos.image_data}
+            })
+            messages_payload = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_content}
+            ]
+        else:
+            model_to_use = "openai/gpt-oss-120b"
+            messages_payload = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": datos.mensaje}
+            ]
 
         completion = groq_client.chat.completions.create(
-            model="openai/gpt-oss-120b",
+            model=model_to_use,
             messages=messages_payload,
             temperature=0.7
         )
 
         respuesta_rob = completion.choices[0].message.content
+
+        # Limpiar pensamientos internos de modelos razonadores (<think>...</think>)
+        if "<think>" in respuesta_rob and "</think>" in respuesta_rob:
+            import re
+            respuesta_rob = re.sub(r'<think>.*?</think>', '', respuesta_rob, flags=re.DOTALL).strip()
 
         # 4. Actualizar memoria si R.O.B. genera una etiqueta [RECORDAR: ...]
         if "[RECORDAR:" in respuesta_rob:

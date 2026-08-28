@@ -3,10 +3,48 @@ const userInput = document.getElementById('userInput');
 const sendBtn = document.getElementById('sendBtn');
 const userIdInput = document.getElementById('userId');
 
-// ⚠️ CAMBIA ESTA URL por la de tu backend (Render o Vercel donde corre FastAPI)
-const API_URL = "https://rob-6t96.onrender.com/chat";
+const attachBtn = document.getElementById('attachBtn');
+const imageInput = document.getElementById('imageInput');
+const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+const imagePreview = document.getElementById('imagePreview');
+const imageName = document.getElementById('imageName');
+const removeImageBtn = document.getElementById('removeImageBtn');
 
-function addMessage(text, sender) {
+let selectedImageData = null;
+
+// 🚀 Servidor Backend en Producción (Render)
+const API_URL = "https://rob-6t96.onrender.com/chat";
+// Servidor Backend Local (para pruebas en PC):
+// const API_URL = "http://127.0.0.1:8000/chat";
+
+// Manejo de carga de archivos (Imágenes)
+attachBtn.addEventListener('click', () => imageInput.click());
+
+imageInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            selectedImageData = event.target.result;
+            imagePreview.src = selectedImageData;
+            imageName.textContent = file.name;
+            imagePreviewContainer.style.display = 'flex';
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+removeImageBtn.addEventListener('click', clearSelectedImage);
+
+function clearSelectedImage() {
+    selectedImageData = null;
+    imageInput.value = '';
+    imagePreview.src = '';
+    imageName.textContent = '';
+    imagePreviewContainer.style.display = 'none';
+}
+
+function addMessage(text, sender, imageData = null) {
     const messageDiv = document.createElement('div');
     messageDiv.classList.add('message');
     if (sender === 'user') {
@@ -14,7 +52,20 @@ function addMessage(text, sender) {
     } else {
         messageDiv.classList.add('bot-message');
     }
-    messageDiv.textContent = text;
+
+    if (imageData) {
+        const img = document.createElement('img');
+        img.src = imageData;
+        img.classList.add('message-img');
+        messageDiv.appendChild(img);
+    }
+
+    if (text) {
+        const textSpan = document.createElement('div');
+        textSpan.textContent = text;
+        messageDiv.appendChild(textSpan);
+    }
+
     chatMessages.appendChild(messageDiv);
 
     // Auto-scroll hacia abajo
@@ -24,12 +75,16 @@ function addMessage(text, sender) {
 async function sendMessage() {
     const text = userInput.value.trim();
     const userId = userIdInput.value.trim() || "default_user";
+    const currentImageData = selectedImageData;
 
-    if (text === "") return;
+    if (text === "" && !currentImageData) return;
 
     // Mostrar mensaje del usuario en pantalla
-    addMessage(text, 'user');
+    addMessage(text, 'user', currentImageData);
+
+    // Limpiar entrada e imagen
     userInput.value = "";
+    clearSelectedImage();
     userInput.focus();
 
     try {
@@ -40,7 +95,8 @@ async function sendMessage() {
             },
             body: JSON.stringify({
                 user_id: userId,
-                mensaje: text
+                mensaje: text,
+                image_data: currentImageData
             })
         });
 
