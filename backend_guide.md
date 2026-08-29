@@ -170,7 +170,50 @@ def chatear_con_rob(datos: ChatRequest):
         conv_id = datos.conversation_id or f"chat_{int(datetime.datetime.now().timestamp())}"
         now_iso = datetime.datetime.utcnow().isoformat()
 
-        # Guardar mensaje del usuario
+        # 1. Cargar historial reciente
+        past_msgs_cursor = messages_col.find({"conversation_id": conv_id}).sort("created_at", 1)
+        past_msgs = list(past_msgs_cursor)
+        recent_history = past_msgs[-8:] if len(past_msgs) > 8 else past_msgs
+
+        # 2. Cargar perfil del usuario
+        perfil = memoria_col.find_one({"user_id": datos.user_id})
+        contexto_usuario = perfil.get("preferencias", "Sin datos.") if perfil else "Sin datos."
+
+        # 3. System Prompt
+        system_prompt = (
+            "Eres R.O.B., un asistente enfocado en responder con precisión.\n"
+            "REGLAS OBLIGATORIAS:\n"
+            "1. Cuando el usuario pregunte '¿cómo lo conocen?', '¿quién es?' o use pronombres (él/ella/lo/esto), DEBES responder ÚNICAMENTE sobre la entidad o personaje de la imagen o del mensaje anterior.\n"
+            "2. Sé extremadamente preciso con nombres culturales (ej: Tweety/Piolín, Yosemite Sam/Sam Bigotes).\n"
+            "3. NO des explicaciones filosóficas sobre el idioma ni te desvíes a temas de IA o tecnología.\n"
+            "Si el usuario te dice algo importante sobre él (su nombre, gustos, profesión), "
+            "añade al final de tu respuesta la etiqueta [RECORDAR: lo que debo recordar].\n\n"
+            f"<user_profile>\n{contexto_usuario}\n</user_profile>"
+        )
+
+        messages_payload = [{"role": "system", "content": system_prompt}]
+
+        # 4. Reconstrucción FIEL del historial manteniendo estructura Multimodal (Imágenes)
+        for msg in recent_history:
+            role = "user" if msg.get("sender") == "user" else "assistant"
+            content_txt = msg.get("content") or ""
+            img_b64 = msg.get("image_data")
+
+            if role == "user":
+                if img_b64:
+                    messages_payload.append({
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": content_txt or "Analiza esta imagen."},
+                            {"type": "image_url", "image_url": {"url": img_b64}}
+                        ]
+                    })
+                else:
+                    messages_payload.append({"role": "user", "content": content_txt})
+            else:
+                messages_payload.append({"role": "assistant", "content": content_txt})
+
+        # 5. Guardar mensaje actual del usuario en MongoDB
         messages_col.insert_one({
             "conversation_id": conv_id,
             "user_id": datos.user_id,
@@ -180,39 +223,31 @@ def chatear_con_rob(datos: ChatRequest):
             "created_at": now_iso
         })
 
-        # Actualizar conversación
-        conversations_col.update_one(
-            {"conversation_id": conv_id},
-            {
-                "$set": {"user_id": datos.user_id, "updated_at": now_iso},
-                "$setOnInsert": {
-                    "conversation_id": conv_id,
-                    "title": datos.mensaje[:35] + ("..." if len(datos.mensaje) > 35 else ""),
-                    "created_at": now_iso
-                }
-            },
-            upsert=True
-        )
+        # 6. Añadir mensaje actual al payload
+        if datos.image_data:
+            messages_payload.append({
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": datos.mensaje or "Analiza esta imagen."},
+                    {"type": "image_url", "image_url": {"url": datos.image_data}}
+                ]
+            })
+        else:
+            messages_payload.append({"role": "user", "content": datos.mensaje})
 
-        # Consultar memoria
-        perfil = memoria_col.find_one({"user_id": datos.user_id})
-        contexto = perfil.get("preferencias", "No hay datos previos.") if perfil else "Es un usuario nuevo."
-
-        system_prompt = (
-            "Eres R.O.B., una inteligencia artificial avanzada, amigable y servicial alojada en la nube. "
-            f"Información que ya conoces sobre este usuario: {contexto}. "
-            "Si el usuario te dice algo importante sobre él (su nombre, gustos, profesión), "
-            "añade al final de tu respuesta la etiqueta [RECORDAR: lo que debo recordar]."
-        )
-
+        # 7. Ejecutar modelo de visión en Groq
+        model_to_use = os.getenv("MODEL_NAME", "llama-3.2-11b-vision-preview")
+        
         completion = groq_client.chat.completions.create(
-            model="openai/gpt-oss-120b",
-            messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": datos.mensaje}],
-            temperature=0.7
+            model=model_to_use,
+            messages=messages_payload,
+            temperature=0.1,
+            max_tokens=400
         )
 
-        respuesta_rob = completion.choices[0].message.content
+        respuesta_rob = completion.choices[0].message.content.strip()
 
+        # Procesar etiqueta de memoria
         if "[RECORDAR:" in respuesta_rob:
             partes = respuesta_rob.split("[RECORDAR:")
             respuesta_limpia = partes[0].strip()
@@ -225,6 +260,17 @@ def chatear_con_rob(datos: ChatRequest):
             respuesta_rob = respuesta_limpia
         else:
             respuesta_rob = respuesta_rob.strip()
+
+        # 8. Guardar respuesta del bot
+        messages_col.insert_one({
+            "conversation_id": conv_id,
+            "user_id": datos.user_id,
+            "sender": "bot",
+            "content": respuesta_rob,
+            "created_at": datetime.datetime.utcnow().isoformat()
+        })
+
+        return ChatResponse(rob_response=respuesta_rob, conversation_id=conv_id)
 
         # Guardar respuesta de R.O.B.
         messages_col.insert_one({

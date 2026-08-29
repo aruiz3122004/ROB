@@ -10,12 +10,14 @@ const imagePreview = document.getElementById('imagePreview');
 const imageName = document.getElementById('imageName');
 const removeImageBtn = document.getElementById('removeImageBtn');
 
+let currentConversationId = null;
 let selectedImageData = null;
 
-// 🚀 Servidor Backend en Producción (Render)
+// 🚀 Servidor Backend en Producción (Render):
+// const API_URL = "https://rob-6t96.onrender.com/chat";
+
+// 💻 Servidor Backend Local (para pruebas locales con uvicorn main:app --reload):
 const API_URL = "https://rob-6t96.onrender.com/chat";
-// Servidor Backend Local (para pruebas en PC):
-// const API_URL = "http://127.0.0.1:8000/chat";
 
 // Manejo de carga de archivos (Imágenes)
 attachBtn.addEventListener('click', () => imageInput.click());
@@ -95,6 +97,7 @@ async function sendMessage() {
             },
             body: JSON.stringify({
                 user_id: userId,
+                conversation_id: currentConversationId,
                 mensaje: text,
                 image_data: currentImageData
             })
@@ -102,6 +105,7 @@ async function sendMessage() {
 
         if (response.ok) {
             const data = await response.json();
+            currentConversationId = data.conversation_id;
             addMessage(data.rob_response, 'bot');
         } else {
             addMessage("Error: El servidor respondió con un fallo.", 'bot');

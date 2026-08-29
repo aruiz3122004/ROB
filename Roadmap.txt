@@ -25,18 +25,41 @@ IMPLEMENTAR:
 -DESPLEGAR AL SERVIDOR: SUBIR EL CÓDIGO DE PYTHON A RENDER O RAILWAY
 -CREAR LA INTERFAZ WEB: CONECTAR LA URL DEL BACKEND A UNA PÁGINA WEB SENCILLA PARA CHATEAR CON EL DESDE CUALQUIER LUGAR
 
-PLATAFORMA: GROQ
-API KEY: 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
-NAME: ROB 
-
-PLATAFORMA: MONGODB
-CLÚSTER GRATUITO (512 MB STORAGE)
-
-USERNAME: andreselgameroscuro_db_user
-PASSWORD: bBeiTGngybJkEU6h
-IP: 191.110.53.23
 
 
+
+
+ERRORES QUE COMETÍ:
+-CONTEXTO: UTILICÉ UNA IMAGEN DE PIOLIN COMO PRUEBA, LE ENVIABA AL CHATBOT LA IMAGEN DE PIOLIN
+CON LA PREGUNTA ¿RECONOCES A ESTE PERSONAJE?, SU RESPUESTA ERA CORRECTA, PERO AL YO SEGUIR EL HILO DE LA CONVERSACIÓN
+ESTA SE PERDÍA POR COMPLETO, CONFUNDÍA LOS CONTEXTOS Y LOS SYSTEM PROMPTS O UTILIZABA PALABRAS EXTRAÑAS AL TENER TEMPERATURA MUY ALTA >1.5
+
+El fallo no era un solo problema, sino una cadena de tres componentes que se bloqueaban entre sí:
+
+Estructura del Payload Conversacional (Lógica Backend): Este era el problema principal de la conversación fluida. Tu código anterior destruía el contexto visual convirtiendo las imágenes del historial en texto plano ([El usuario adjuntó una imagen]) y además aplicaba un Query Rewriting con split(".") que recortaba mal las frases del bot. Al arreglar la función en FastAPI para reconstruir las imágenes como un arreglo multimodal y enviar los mensajes de seguimiento limpios, el modelo recuperó la capacidad de asociar pronombres ("lo", "este") a la imagen previa.
+
+Sintaxis de la URI de MongoDB (Conexión Base de Datos): No era un error de arquitectura, sino de sintaxis. Dejar los caracteres <> en la contraseña de Atlas (<bBeiTGngybJkEU6h>) y omitir el nombre de la base de datos (/rob_database) bloqueaba la autenticación, impidiendo que el servidor guardara o leyera los mensajes históricos.
+
+Configuración del Modelo en Groq (Infraestructura API): El último obstáculo fueron las credenciales del modelo. Pasar de un nombre dado de baja (llama-3.2-11b-vision-preview) a un string incompleto sin la organización (qwen3.8-27b) generaba errores de conexión 400 y 404. Al colocar el nombre exacto con su namespace (qwen/qwen3.8-27b), la API finalmente pudo procesar la solicitud.
+
+En resumen: la lógica conversacional se arregló en el código/prompt del backend, mientras que los fallos que impedían probarlo eran de credenciales y configuración del entorno.
+
+->PARA TENER EN CUENTA:
+// 🚀 Servidor Backend en Producción (Render):
+// const API_URL = "https://rob-6t96.onrender.com/chat";
+
+// 💻 Servidor Backend Local (para pruebas locales con uvicorn main:app --reload):
+const API_URL = "http://127.0.0.1:8000/chat";
+
+//EL BACKEND ES ESTE, QUE CONTIENE LA INTEGRACIÓN DE PYTHON + FASTAPI + MONGODB ATLAS + MODELO DE IA GROQ + LA INTERFAZ SENCILLA DE PRUEBAS
+-> BACKEND DESPLEGADO EN RENDER, EN GITHUB BAJO EL REPOSITORIO LLAMADO "ROB"
+COMANDO DEPLOY LOCAL: python -m uvicorn main:app --reload
+http://127.0.0.1:8000/chat
+
+//EL FRONTEND FUE DESPLEGADO EN VERCEL, EN GITHUB BAJO EL REPOSITORIO LLAMADO "ROB-FRONTEND", ARCHIVO CON HTML, CSS, JS.
+-> FRONTEND DESPLEGADO EN VERCEL.
+DEPLOY LOCAL: ABRIR SERVIDOR LIVESERVER O CUALQUIER EXTENSIÓN
+http://127.0.0.1:5500/
 
 
 CAMBIAR O AÑADIR 28/08/2026 2:16 PM
